@@ -2,3 +2,9 @@
 ~$amsterdam_apartments.xlsx
 credentials.json
 .env
+.serverless/cloudformation-template-create-stack.json
+.serverless/cloudformation-template-update-stack.json
+.serverless/serverless-state.json
+.serverless/requirements.txt
+.serverless/requirements
+.serverless/amsterdam-apartment-scraper.zip

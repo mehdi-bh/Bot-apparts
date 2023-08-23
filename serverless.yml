@@ -1,0 +1,43 @@
+service: amsterdam-apartment-scraper
+
+provider:
+  name: aws
+  runtime: python3.8
+  stage: dev
+  region: eu-west-3
+  environment:
+    FUNDA_URL: ${env:FUNDA_URL}
+    FUNDA_PAGE_PARAM: ${env:FUNDA_PAGE_PARAM}
+    PARARIUS_URL: ${env:PARARIUS_URL}
+    PARARIUS_PAGE_PARAM: ${env:PARARIUS_PAGE_PARAM}
+    GOOGLE_API_KEY: ${env:GOOGLE_API_KEY}
+    GOOGLE_DIRECTIONS_API_ENDPOINT: ${env:GOOGLE_DIRECTIONS_API_ENDPOINT}
+    GOOGLE_CREDENTIALS: ${env:GOOGLE_CREDENTIALS}
+    GOOGLE_SHEET_NAME: ${env:GOOGLE_SHEET_NAME}
+    TWILLIO_ACCOUNT_SID: ${env:TWILLIO_ACCOUNT_SID}
+    TWILLIO_AUTH_TOKEN: ${env:TWILLIO_AUTH_TOKEN}
+    TWILLIO_PHONE_NUMBER: ${env:TWILLIO_PHONE_NUMBER}
+    MY_PHONE_NUMBER: ${env:MY_PHONE_NUMBER}
+
+functions:
+  myFunction:
+    handler: stephane_plaza.lambda_handler
+    timeout: 300
+    events:
+      - schedule: rate(1 hour)
+
+package:
+  excludeDevDependencies: true
+  include:
+    - requirements.txt
+
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+  dotenv:
+    path: ${file(./.env)}
+

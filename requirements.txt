@@ -1,0 +1,7 @@
+requests
+beautifulsoup4
+pandas
+twilio
+gspread
+oauth2client
+python-dotenv

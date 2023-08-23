@@ -121,7 +121,7 @@ def save_apartments_to_gsheet(client, spreadsheet_name, sheet_name, records):
     worksheet.clear()
     
     # Set the headers and the records
-    headers = ["Street Name", "Min to Booking", "Price", "Size (m²)", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
+    headers = ["Status", "Street Name", "Min to Booking", "Price", "Size (m²)", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
     all_records = [headers] + records
     worksheet.append_rows(all_records)
 
@@ -209,14 +209,13 @@ def scrape_page(url, existing_apartments, website):
             if 'data-test-id' in tag.attrs and tag['data-test-id'] == 'street-name-house-number':
                 street_name, postal_code_city, price, size, rooms, agent, link = extract_from_funda_card(tag)
                 address = f"{street_name}, {postal_code_city}, Amsterdam"
-                # duration_to_booking = get_travel_duration(address)
-                duration_to_booking = 10
+                duration_to_booking = get_travel_duration(address)
                 google_maps_link = generate_google_maps_link(address)
                 
                 if street_name in existing_addresses:
                     return new_apartment_details
 
-                infos = [street_name, duration_to_booking, price, size, rooms, agent, link, google_maps_link]
+                infos = ["", street_name, duration_to_booking, price, size, rooms, agent, link, google_maps_link]
                 new_apartment_details.append(infos)
 
                 message = "Funda: " + link
@@ -236,7 +235,7 @@ def scrape_page(url, existing_apartments, website):
             if street_name in existing_addresses:
                 return new_apartment_details
 
-            infos = [street_name, duration_to_booking, price, size, rooms, agent, link, google_maps_link]
+            infos = ["", street_name, duration_to_booking, price, size, rooms, agent, link, google_maps_link]
             new_apartment_details.append(infos)
 
             message = "Pararius: " + link
@@ -252,7 +251,7 @@ def scrape_and_save(existing_apartments, website):
         current_url = PARARIUS_URL
     
     apartments_on_page = scrape_page(current_url, existing_apartments, website)
-    columns = ["Street Name", "Min to Booking", "Price", "Size (m²)", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
+    columns = ["Status", "Street Name", "Min to Booking", "Price", "Size (m²)", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
     df_new_apartments = pd.DataFrame(apartments_on_page, columns=columns)
 
     if existing_apartments:
@@ -285,7 +284,7 @@ def scrape_all_pages(existing_apartments, website):
         new_apartments.extend(apartments_on_page)
         current_page += 1
 
-    columns = ["Street Name", "Min to Booking", "Price", "Size (m²)", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
+    columns = ["Status", "Street Name", "Min to Booking", "Price", "Size (m²)", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
     df_new_apartments = pd.DataFrame(new_apartments, columns=columns)
 
     if existing_apartments:
@@ -307,6 +306,7 @@ def send_message(message):
 Main
 """
 def run_program():
+    print("Running program...")
     # Authenticate with Google Sheets API
     client = authenticate_with_gspread(GOOGLE_CREDENTIALS)
     
@@ -315,7 +315,7 @@ def run_program():
     # Load existing apartments from Google Sheets
     existing_funda = load_existing_apartments_from_gsheet(client, spreadsheet_name, "Funda")
     existing_pararius = load_existing_apartments_from_gsheet(client, spreadsheet_name, "Pararius")
-    
+
     df_funda = scrape_and_save(existing_funda, "funda")
     df_pararius = scrape_and_save(existing_pararius, "pararius")
 
@@ -326,6 +326,13 @@ def run_program():
     # Save to Google Sheets
     save_apartments_to_gsheet(client, spreadsheet_name, "Funda", funda_records)
     save_apartments_to_gsheet(client, spreadsheet_name, "Pararius", pararius_records)
+
+def lambda_handler(event, context):
+    run_program()
+    return {
+        'statusCode': 200,
+        'body': 'Program finished successfully'
+    }
 
 if __name__ == "__main__":
     run_program()
