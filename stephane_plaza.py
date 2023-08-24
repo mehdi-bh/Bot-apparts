@@ -12,6 +12,9 @@ from dotenv import load_dotenv
 PARAMETERS
 """
 job_adress = "Booking.com, Oosterdokskade, Amsterdam, Pays-Bas"
+center_adress = "Rokin, Amsterdam, Pays-Bas"
+depijp_adress = "De pijp, Amsterdam, Pays-Bas"
+jordaan_adress = "Jordaan, Amsterdam, Pays-Bas"
 
 TWILLIO_PHONE_NUMBER = "+12052094890"
 MY_PHONE_NUMBER = "+32489694032"
@@ -21,6 +24,7 @@ PARARIUS_BASE_URL = "https://www.pararius.com"
 """
 Constants
 """
+# set -a; source .env; set +a
 load_dotenv()
 
 FUNDA_URL = os.getenv("FUNDA_URL")
@@ -51,7 +55,7 @@ def generate_google_maps_link(address):
     base_url = "https://www.google.com/maps/search/?api=1&query="
     return base_url + address.replace(" ", "+")
 
-def get_travel_duration(start_address, end_address=job_adress):
+def get_travel_duration(start_address, end_address):
     params = {
         "origin": start_address,
         "destination": end_address,
@@ -121,7 +125,7 @@ def save_apartments_to_gsheet(client, spreadsheet_name, sheet_name, records):
     worksheet.clear()
     
     # Set the headers and the records
-    headers = ["Status", "Street Name", "Min to Booking", "Price", "Size (m²)", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
+    headers = ["Status", "Street Name", "Price", "Size (m²)", "Booking", "Rokin", "De Pijp", "Jordaan", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
     all_records = [headers] + records
     worksheet.append_rows(all_records)
 
@@ -209,18 +213,23 @@ def scrape_page(url, existing_apartments, website):
             if 'data-test-id' in tag.attrs and tag['data-test-id'] == 'street-name-house-number':
                 street_name, postal_code_city, price, size, rooms, agent, link = extract_from_funda_card(tag)
                 address = f"{street_name}, {postal_code_city}, Amsterdam"
-                duration_to_booking = get_travel_duration(address)
+
+                duration_to_booking = get_travel_duration(address, job_adress)
+                duration_to_rokin = get_travel_duration(address, center_adress)
+                duration_to_depijp = get_travel_duration(address, depijp_adress)
+                duration_to_jordaan = get_travel_duration(address, jordaan_adress)
+
                 google_maps_link = generate_google_maps_link(address)
                 
                 if street_name in existing_addresses:
                     return new_apartment_details
 
-                infos = ["", street_name, duration_to_booking, price, size, rooms, agent, link, google_maps_link]
+                infos = ["", street_name, price, size, duration_to_booking, duration_to_rokin, duration_to_depijp, duration_to_jordaan, rooms, agent, link, google_maps_link]
                 new_apartment_details.append(infos)
 
                 message = "Funda: " + link
                 print(message)
-                # send_message(message)
+                send_message(message)
 
     elif website == "pararius":
         response = requests.get(url, headers=headers)
@@ -229,18 +238,23 @@ def scrape_page(url, existing_apartments, website):
         for card in cards:
             street_name, postal_code_city, price, size, rooms, agent, link = extract_from_pararius_card(card)
             address = f"{street_name}, {postal_code_city}, Amsterdam"
-            duration_to_booking = get_travel_duration(address)
+
+            duration_to_booking = get_travel_duration(address, job_adress)
+            duration_to_rokin = get_travel_duration(address, center_adress)
+            duration_to_depijp = get_travel_duration(address, depijp_adress)
+            duration_to_jordaan = get_travel_duration(address, jordaan_adress)
+
             google_maps_link = generate_google_maps_link(address)
 
             if street_name in existing_addresses:
                 return new_apartment_details
 
-            infos = ["", street_name, duration_to_booking, price, size, rooms, agent, link, google_maps_link]
+            infos = ["", street_name, price, size, duration_to_booking, duration_to_rokin, duration_to_depijp, duration_to_jordaan, rooms, agent, link, google_maps_link]
             new_apartment_details.append(infos)
 
             message = "Pararius: " + link
             print(message)
-            # send_message(message)
+            send_message(message)
 
     return new_apartment_details
 
@@ -251,7 +265,7 @@ def scrape_and_save(existing_apartments, website):
         current_url = PARARIUS_URL
     
     apartments_on_page = scrape_page(current_url, existing_apartments, website)
-    columns = ["Status", "Street Name", "Min to Booking", "Price", "Size (m²)", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
+    columns = ["Status", "Street Name", "Price", "Size (m²)", "Booking", "Rokin", "De Pijp", "Jordaan", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
     df_new_apartments = pd.DataFrame(apartments_on_page, columns=columns)
 
     if existing_apartments:
@@ -284,7 +298,7 @@ def scrape_all_pages(existing_apartments, website):
         new_apartments.extend(apartments_on_page)
         current_page += 1
 
-    columns = ["Status", "Street Name", "Min to Booking", "Price", "Size (m²)", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
+    columns = ["Status", "Street Name", "Price", "Size (m²)", "Booking", "Rokin", "De Pijp", "Jordaan", "Rooms", "Agent", "Detail Link", "Google Maps Link"]
     df_new_apartments = pd.DataFrame(new_apartments, columns=columns)
 
     if existing_apartments:

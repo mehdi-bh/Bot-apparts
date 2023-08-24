@@ -24,7 +24,7 @@ functions:
     handler: stephane_plaza.lambda_handler
     timeout: 300
     events:
-      - schedule: rate(1 hour)
+      - schedule: rate(10 minute)
 
 package:
   excludeDevDependencies: true
