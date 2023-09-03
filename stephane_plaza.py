@@ -212,6 +212,10 @@ def scrape_page(url, existing_apartments, website):
         for tag in tags:
             if 'data-test-id' in tag.attrs and tag['data-test-id'] == 'street-name-house-number':
                 street_name, postal_code_city, price, size, rooms, agent, link = extract_from_funda_card(tag)
+                
+                if street_name in existing_addresses:
+                    return new_apartment_details
+
                 address = f"{street_name}, {postal_code_city}, Amsterdam"
 
                 duration_to_booking = get_travel_duration(address, job_adress)
@@ -221,9 +225,6 @@ def scrape_page(url, existing_apartments, website):
 
                 google_maps_link = generate_google_maps_link(address)
                 
-                if street_name in existing_addresses:
-                    return new_apartment_details
-
                 infos = ["", street_name, price, size, duration_to_booking, duration_to_rokin, duration_to_depijp, duration_to_jordaan, rooms, agent, link, google_maps_link]
                 new_apartment_details.append(infos)
 
@@ -237,6 +238,10 @@ def scrape_page(url, existing_apartments, website):
         cards = soup.select(".listing-search-item")
         for card in cards:
             street_name, postal_code_city, price, size, rooms, agent, link = extract_from_pararius_card(card)
+
+            if street_name in existing_addresses:
+                return new_apartment_details
+        
             address = f"{street_name}, {postal_code_city}, Amsterdam"
 
             duration_to_booking = get_travel_duration(address, job_adress)
@@ -245,9 +250,6 @@ def scrape_page(url, existing_apartments, website):
             duration_to_jordaan = get_travel_duration(address, jordaan_adress)
 
             google_maps_link = generate_google_maps_link(address)
-
-            if street_name in existing_addresses:
-                return new_apartment_details
 
             infos = ["", street_name, price, size, duration_to_booking, duration_to_rokin, duration_to_depijp, duration_to_jordaan, rooms, agent, link, google_maps_link]
             new_apartment_details.append(infos)
